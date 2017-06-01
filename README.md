@@ -8,10 +8,13 @@ Here is what you need to get this library to run:
 3. Install OpenCV. Since the Jetpack provides OpenCV, you only need to install the python bindings :https://devtalk.nvidia.com/default/topic/740390/tegra-jetson-gpu-accleration-in-opencv-/
 
 try: sudo apt-get install libopencv4tegra-python
+
 4. Install openNI2: http://myzharbot.robot-home.it/blog/software/configuration-nvidia-jetson-tk1/asus-xtion-pro-live-openni2-compilation-install-instructions/
 
 do go through the comments as there are a few corrections to be made while editing the makefile.
+
 5. Install python bindings for OpenNI2: sudo pip install primesense
+
 6. Try examples here to get familiar with OpenNI2 and openCV to access the RGBD streams: https://github.com/elmonkey/Python_OpenNI2
 
 make sure to modify the path to OpenNI redistribution (path to openNI2.so). This can be found after installing OpenNI2 (step 4)
