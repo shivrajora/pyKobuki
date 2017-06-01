@@ -8,7 +8,7 @@ Here is what you need to get this library to run:
 3. Install OpenCV. Since the Jetpack provides OpenCV, you only need to install the python bindings :https://devtalk.nvidia.com/default/topic/740390/tegra-jetson-gpu-accleration-in-opencv-/
 
 try: 
-'sudo apt-get install libopencv4tegra-python
+sudo apt-get install libopencv4tegra-python
 
 4. Install openNI2: http://myzharbot.robot-home.it/blog/software/configuration-nvidia-jetson-tk1/asus-xtion-pro-live-openni2-compilation-install-instructions/
 
@@ -20,7 +20,7 @@ do go through the comments as there are a few corrections to be made while editi
 
 make sure to modify the path to OpenNI redistribution (path to openNI2.so). This can be found after installing OpenNI2 (step 4)
 default path should be: 
-'dist = '/usr/lib/'
+dist = '/usr/lib/'
 
 # Functions
 constructor:
@@ -34,4 +34,4 @@ send(commands)
 input: 
 1. commands: list of bytes to be sent to the Kobuki
 
-This function sends commands to the Kobuki
+This function sends commands to the Kobukid
