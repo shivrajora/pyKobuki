@@ -34,4 +34,6 @@ send(commands)
 input: 
 1. commands: list of bytes to be sent to the Kobuki
 
-This function sends commands to the Kobukid
+This function sends commands to the Kobuki (http://yujinrobot.github.io/kobuki/enAppendixProtocolSpecification.html)
+
+base_control(speed, radius)
