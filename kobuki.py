@@ -6,7 +6,10 @@
 from serial import Serial
 import numpy as np
 import cv2
-from primesense import openni2#, nite2
+import time
+import csv
+from datetime import datetime
+from primesense import openni2#, niite2
 from primesense import _openni2 as c_api
 
 # Path to OpenNI redistribution OpenNI2.so
@@ -53,6 +56,12 @@ class Kobuki :
 		#initialize Serial communication
 		self.serial = Serial(dev_path, 115200)
 		print("Serial connection to Kobuki initialized")
+
+		self.save_path = 'data/'
+
+		#Initialize CSV file
+		self.csv_file = open(self.save_path+'data.csv', "wb")
+		self.csv_writer = csv.writer(self.csv_file, delimiter=' ', quotechar='|', quoting=csv.QUOTE_NONE)
 
 	def get_rgb(self):
 		"""
@@ -101,13 +110,15 @@ class Kobuki :
 	
 	# destructor
 	def __del__(self):
+		self.stop()
 		self.serial.close()
 		print("Serial connection to Kobuki closed")
 
 		## Release resources 
+		self.csv_file.close()
 		cv2.destroyAllWindows()
 		self.rgb_stream.stop()
-		#self.depth_stream.stop()
+		self.depth_stream.stop()
 		openni2.unload()
 		print ("OpenCV and OpenNI Terminated")
 
@@ -155,3 +166,74 @@ class Kobuki :
 		print("throttle : ", thr, "steer : ", steer)
 		#drive robot
 		self.send(self.base_control(speed,radius))
+
+	def save_data(self, steer, throttle) :
+
+		time_str = self.save_path+datetime.now().strftime("%Y_%m_%d_%H_%M_%S_")+str(time.time()).replace(".","_")
+		rgb_str = time_str+"_rgb.png"
+		depth_str = time_str+"_depth.png"
+		#rgb = self.get_rgb()
+		#_,d4d = self.get_depth()
+		cv2.imwrite(rgb_str, self.rgb)
+		cv2.imwrite(depth_str,self.d4d)
+		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(steer)]+[str(throttle)])
+		
+		#cv2.imwrite(self.format_time(img_name)+'.png', img)
+
+	def run(self) :
+		cv2.namedWindow('display', cv2.WINDOW_NORMAL)
+		#self.rgb = self.get_rgb()
+                #_,self.d4d = self.get_depth()
+		thr = 0
+		steer = 50
+		thr_step = 2
+		steer_step = 1
+		while(True) :
+	                self.rgb = self.get_rgb()
+	                _,self.d4d = self.get_depth()
+			#canvas = np.hstack((self.rgb,self.d4d))
+			#cv2.imshow('depth || rgb', canvas )
+			char = '\0'
+			char = cv2.waitKey(100) & 255
+			if(char == 27) :
+				print("\tEscape key detected!")
+                		break
+
+		        elif char == ord('w'):
+                		thr = thr+thr_step
+				steer = 50
+                		if(thr>100) :
+                        		thr = 100
+                		self.drive(thr,steer)
+        
+        		elif char == ord('a') :
+                		if(steer <= 50) :
+                        		steer = 100
+                		steer = steer - steer_step
+                		if(steer<80) :
+                        		steer = 80
+                		self.drive(thr,steer)
+
+		        elif char == ord('d') :
+                		if(steer>=50) :
+		                        steer = 0
+                		steer = steer+steer_step
+                		if(steer>20) :
+                        		steer = 20
+                		self.drive(thr,steer)
+
+        		#elif char == curses.KEY_DOWN :
+        		elif char == ord('s') :
+				steer = 50
+                		thr = thr-thr_step
+                		if(thr<0) :
+                        		thr = 0
+                		self.drive(thr,steer)
+
+			else :
+				self.drive(thr,steer)
+
+			# save data
+			self.save_data(steer, thr)
+			
+		self.stop()
