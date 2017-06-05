@@ -1,5 +1,6 @@
 import kobuki
 import time
+from datetime import datetime
 import cv2
 import numpy as np
 
@@ -10,9 +11,10 @@ thr_step = 2
 steer_step = 1
 
 #print(time.time())
+kob.run()
 
-'''while(True) :
-	char = screen.getch()
+'''
+while(True) :
 	if(char == ord('q')) :
 		break
 
@@ -46,14 +48,12 @@ steer_step = 1
                 kob.drive(thr,50)
 
 
-curses.nocbreak(); screen.keypad(0); curses.echo()
-curses.endwin()
 
-print(time.time())
+#print(time.time())
 
 kob.stop()
 '''
-
+'''
 ## main loop
 s=0
 done = False
@@ -81,4 +81,6 @@ while not done:
 	## Display the stream syde-by-side
 	cv2.imshow('depth || rgb', canvas )
 # end while
-
+'''
+#kob.save_data(0,0)
+#kob.save_data(100,0)
