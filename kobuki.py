@@ -67,15 +67,9 @@ class Kobuki :
 		self.csv_file = open(self.save_path+'data.csv', "wb")
 		self.csv_writer = csv.writer(self.csv_file, delimiter=' ', quotechar='|', quoting=csv.QUOTE_NONE)
 
+		# throttle and steering variables
 		self.thr = 0
                 self.steer = 50
-
-		# set up Queue for inter-thread communication
-		self.thr_msg = qu.Queue(1)
-		self.steer_msg = qu.Queue(1)
-
-		# setup lock to safely close the recording thread
-		self.LOCK = th.Lock()
 
 	def get_rgb(self):
 		"""
@@ -177,7 +171,7 @@ class Kobuki :
 
 		radius = -300+steer*6
 
-		#print("throttle : ", thr, "steer : ", steer)
+		print("throttle : ", thr, "steer : ", steer)
 		#drive robot
 		self.send(self.base_control(speed,radius))
 
@@ -199,15 +193,10 @@ class Kobuki :
 		
 		thr_step = 2
 		steer_step = 1
-
-		#create recording subprocess
-		r = th.Thread(name='rd', target=self.record_data)
-		r.setDaemon(True)
-		r.start()
-
+		start_time = time.time()
 		while(True) :
 			char = '\0'
-			char = cv2.waitKey(10) & 255
+			char = cv2.waitKey(100) & 255
 			if(char == 27) :
 				print("\tEscape key detected!")
                 		break
@@ -238,25 +227,17 @@ class Kobuki :
                 		if(self.thr<0) :
                         		self.thr = 0
 
-			self.drive(self.thr,self.steer)
-			self.thr_msg.put(self.thr)
-			self.steer_msg.put(self.steer)
-			
-		self.stop()
-		
-		if(r.isAlive == True) :
-			self.LOCK.acquire()
-			r.stop()
-			self.LOCK.release()
+	                self.rgb = self.get_rgb()
+	                _,self.d4d = self.get_depth()
 
-	def record_data(self) :
-		while (True) :
-			self.rgb = self.get_rgb()
-                	_,self.d4d = self.get_depth()
-			self.LOCK.acquire()
-			self.save_data(self.steer_msg.get(), self.thr_msg.get())
-			self.LOCK.release()
-			time.sleep(0.1)
+			self.drive(self.thr,self.steer)
+
+			end_time = time.time()
+			if((end_time-start_time)>0.1) :
+				self.save_data(self.steer, self.thr)
+				start_time = start_time + 0.1
+
+		self.stop()
 
 if __name__ == '__main__' :
 	print("Do not execute this module")	
