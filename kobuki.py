@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pythoni
 # coding:utf-8
 #
 # kobuki.py
@@ -8,6 +8,9 @@ import numpy as np
 import cv2
 import time
 import csv
+import multiprocessing as mp
+import threading as th
+import Queue as qu
 from datetime import datetime
 from primesense import openni2#, niite2
 from primesense import _openni2 as c_api
@@ -56,12 +59,23 @@ class Kobuki :
 		#initialize Serial communication
 		self.serial = Serial(dev_path, 115200)
 		print("Serial connection to Kobuki initialized")
-
+		
+		# Set save path here
 		self.save_path = 'data/'
 
 		#Initialize CSV file
 		self.csv_file = open(self.save_path+'data.csv', "wb")
 		self.csv_writer = csv.writer(self.csv_file, delimiter=' ', quotechar='|', quoting=csv.QUOTE_NONE)
+
+		self.thr = 0
+                self.steer = 50
+
+		# set up Queue for inter-thread communication
+		self.thr_msg = qu.Queue(1)
+		self.steer_msg = qu.Queue(1)
+
+		# setup lock to safely close the recording thread
+		self.LOCK = th.Lock()
 
 	def get_rgb(self):
 		"""
@@ -153,7 +167,7 @@ class Kobuki :
 		
 		speed = thr*3;
 		
-		#map steering (0-100)
+		#map steering (0-100)i
 		if(steer>100) :
                         print("Steering limit exceeded, setting to 100%")
                         radius = 100
@@ -163,12 +177,12 @@ class Kobuki :
 
 		radius = -300+steer*6
 
-		print("throttle : ", thr, "steer : ", steer)
+		#print("throttle : ", thr, "steer : ", steer)
 		#drive robot
 		self.send(self.base_control(speed,radius))
 
-	def save_data(self, steer, throttle) :
-
+	def save_data(self, steer, thr) :
+		print("Saving data")
 		time_str = self.save_path+datetime.now().strftime("%Y_%m_%d_%H_%M_%S_")+str(time.time()).replace(".","_")
 		rgb_str = time_str+"_rgb.png"
 		depth_str = time_str+"_depth.png"
@@ -176,64 +190,73 @@ class Kobuki :
 		#_,d4d = self.get_depth()
 		cv2.imwrite(rgb_str, self.rgb)
 		cv2.imwrite(depth_str,self.d4d)
-		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(steer)]+[str(throttle)])
+		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(steer)]+[str(thr)])
 		
 		#cv2.imwrite(self.format_time(img_name)+'.png', img)
 
 	def run(self) :
 		cv2.namedWindow('display', cv2.WINDOW_NORMAL)
-		#self.rgb = self.get_rgb()
-                #_,self.d4d = self.get_depth()
-		thr = 0
-		steer = 50
+		
 		thr_step = 2
 		steer_step = 1
+
+		#create recording subprocess
+		r = th.Thread(name='rd', target=self.record_data)
+		r.setDaemon(True)
+		r.start()
+
 		while(True) :
-	                self.rgb = self.get_rgb()
-	                _,self.d4d = self.get_depth()
-			#canvas = np.hstack((self.rgb,self.d4d))
-			#cv2.imshow('depth || rgb', canvas )
 			char = '\0'
-			char = cv2.waitKey(100) & 255
+			char = cv2.waitKey(10) & 255
 			if(char == 27) :
 				print("\tEscape key detected!")
                 		break
 
 		        elif char == ord('w'):
-                		thr = thr+thr_step
-				steer = 50
-                		if(thr>100) :
-                        		thr = 100
-                		self.drive(thr,steer)
+                		self.thr = self.thr+thr_step
+				self.steer = 50
+                		if(self.thr>100) :
+                        		self.thr = 100
         
         		elif char == ord('a') :
-                		if(steer <= 50) :
-                        		steer = 100
-                		steer = steer - steer_step
-                		if(steer<80) :
-                        		steer = 80
-                		self.drive(thr,steer)
+                		if(self.steer <= 50) :
+                        		self.steer = 100
+                		self.steer = self.steer - steer_step
+                		if(self.steer<80) :
+                        		self.steer = 80
 
 		        elif char == ord('d') :
-                		if(steer>=50) :
-		                        steer = 0
-                		steer = steer+steer_step
-                		if(steer>20) :
-                        		steer = 20
-                		self.drive(thr,steer)
+                		if(self.steer>=50) :
+		                        self.steer = 0
+                		self.steer = self.steer+steer_step
+                		if(self.steer>20) :
+                        		self.steer = 20
 
-        		#elif char == curses.KEY_DOWN :
         		elif char == ord('s') :
-				steer = 50
-                		thr = thr-thr_step
-                		if(thr<0) :
-                        		thr = 0
-                		self.drive(thr,steer)
+				self.steer = 50
+                		self.thr = self.thr-thr_step
+                		if(self.thr<0) :
+                        		self.thr = 0
 
-			else :
-				self.drive(thr,steer)
-
-			# save data
-			self.save_data(steer, thr)
+			self.drive(self.thr,self.steer)
+			self.thr_msg.put(self.thr)
+			self.steer_msg.put(self.steer)
 			
 		self.stop()
+		
+		if(r.isAlive == True) :
+			self.LOCK.acquire()
+			r.stop()
+			self.LOCK.release()
+
+	def record_data(self) :
+		while (True) :
+			self.rgb = self.get_rgb()
+                	_,self.d4d = self.get_depth()
+			self.LOCK.acquire()
+			self.save_data(self.steer_msg.get(), self.thr_msg.get())
+			self.LOCK.release()
+			time.sleep(0.1)
+
+if __name__ == '__main__' :
+	print("Do not execute this module")	
