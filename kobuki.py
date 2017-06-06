@@ -15,7 +15,7 @@ from primesense import _openni2 as c_api
 # Path to OpenNI redistribution OpenNI2.so
 dist = '/usr/lib/'
 
-class Kobuki :
+class kobuki :
 	# initialize Kobuki. OpenCV and 3D camera
 	def __init__(self, dev_path):
 		#initialize OpenNI2
@@ -122,10 +122,12 @@ class Kobuki :
 		## Release resources 
 		self.csv_file.close()
 		cv2.destroyAllWindows()
+		print("OpenCV terminated")		
+
 		self.rgb_stream.stop()
 		self.depth_stream.stop()
 		openni2.unload()
-		print ("OpenCV and OpenNI Terminated")
+		print ("OpenNI Terminated")
 
 	# Prepare byte string for speed and turn radius of Kobuki
         def base_control(self, speed, radius) :
@@ -243,4 +245,5 @@ class Kobuki :
 		self.stop()
 
 if __name__ == '__main__' :
-	print("Do not execute this module")	
+	kob = kobuki('/dev/ttyUSB0')
+	kob.run()
