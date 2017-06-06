@@ -127,7 +127,7 @@ class Kobuki :
 		openni2.unload()
 		print ("OpenCV and OpenNI Terminated")
 
-
+	# Prepare byte string for speed and turn radius of Kobuki
         def base_control(self, speed, radius) :
                 speed_lsb = 0xff & speed
                 speed_msb = 0xff & (speed>>8)
@@ -136,17 +136,11 @@ class Kobuki :
 
                 return [0x01, 0x04, speed_lsb, speed_msb, radius_lsb, radius_msb]
 
+	# Stop the Kobuki
 	def stop(self):
 		self.send(self.base_control(0,0))
 
-	def base_control(self, speed, radius) :
-		speed_lsb = 0xff & speed
-		speed_msb = 0xff & (speed>>8)
-		radius_lsb = 0xff & radius 
-		radius_msb = 0xff & (radius>>8)
-  
-		return [0x01, 0x04, speed_lsb, speed_msb, radius_lsb, radius_msb]
-
+	# Map throttle values to values input by Kobuki
 	def drive(self, thr, steer) :
 		#map throttle (0-100) to speed value
 		if(thr>100) :
@@ -168,29 +162,43 @@ class Kobuki :
 
 		radius = -300+steer*6
 
-		print("throttle : ", thr, "steer : ", steer)
+		#print("throttle : ", thr, "steer : ", steer)
+		
 		#drive robot
 		self.send(self.base_control(speed,radius))
 
+	# Save images+steering+throttle data
 	def save_data(self, steer, thr) :
-		print("Saving data")
+		# Get RGB + Depth images
+		rgb = self.get_rgb()
+                _,d4d = self.get_depth()
+
+		# Prepare strings for save paths
 		time_str = self.save_path+datetime.now().strftime("%Y_%m_%d_%H_%M_%S_")+str(time.time()).replace(".","_")
 		rgb_str = time_str+"_rgb.png"
 		depth_str = time_str+"_depth.png"
-		#rgb = self.get_rgb()
-		#_,d4d = self.get_depth()
-		cv2.imwrite(rgb_str, self.rgb)
-		cv2.imwrite(depth_str,self.d4d)
+	
+		# Write images
+		cv2.imwrite(rgb_str, rgb)
+		cv2.imwrite(depth_str, d4d)
+
+		# Write steer + throttle into CSV
 		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(steer)]+[str(thr)])
 		
-		#cv2.imwrite(self.format_time(img_name)+'.png', img)
-
+	# Main run loop
 	def run(self) :
+
+		# Create window for robot control input
 		cv2.namedWindow('display', cv2.WINDOW_NORMAL)
 		
+		# step values. Change to increase/decrease acceleration
 		thr_step = 2
 		steer_step = 1
+
+		# Start measuring time here
 		start_time = time.time()
+
+		# Main loop
 		while(True) :
 			char = '\0'
 			char = cv2.waitKey(100) & 255
@@ -224,9 +232,6 @@ class Kobuki :
                 		if(self.thr<0) :
                         		self.thr = 0
 
-	                self.rgb = self.get_rgb()
-	                _,self.d4d = self.get_depth()
-
 			self.drive(self.thr,self.steer)
 
 			end_time = time.time()
@@ -234,6 +239,7 @@ class Kobuki :
 				self.save_data(self.steer, self.thr)
 				start_time = start_time + 0.1
 
+		# Stop robot and exit
 		self.stop()
 
 if __name__ == '__main__' :
