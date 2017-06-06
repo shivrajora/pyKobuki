@@ -8,6 +8,7 @@ import numpy as np
 import cv2
 import time
 import csv
+import os
 from datetime import datetime
 from primesense import openni2#, niite2
 from primesense import _openni2 as c_api
@@ -245,5 +246,10 @@ class kobuki :
 		self.stop()
 
 if __name__ == '__main__' :
+	os.system("rm -r data/")
+	os.system("mkdir data/")
 	kob = kobuki('/dev/ttyUSB0')
 	kob.run()
+
+	# make videos
+	os.system("sh make_video.sh")
