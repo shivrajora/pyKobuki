@@ -8,9 +8,6 @@ import numpy as np
 import cv2
 import time
 import csv
-import multiprocessing as mp
-import threading as th
-import Queue as qu
 from datetime import datetime
 from primesense import openni2#, niite2
 from primesense import _openni2 as c_api
