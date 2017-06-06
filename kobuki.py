@@ -178,8 +178,8 @@ class kobuki :
 
 		# Prepare strings for save paths
 		time_str = self.save_path+datetime.now().strftime("%Y_%m_%d_%H_%M_%S_")+str(time.time()).replace(".","_")
-		rgb_str = time_str+"_rgb.png"
-		depth_str = time_str+"_depth.png"
+		rgb_str = time_str+"_rgb.jpg"
+		depth_str = time_str+"_depth.jpg"
 	
 		# Write images
 		cv2.imwrite(rgb_str, rgb)
@@ -204,7 +204,7 @@ class kobuki :
 		# Main loop
 		while(True) :
 			char = '\0'
-			char = cv2.waitKey(100) & 255
+			char = cv2.waitKey(10) & 255
 			if(char == 27) :
 				print("\tEscape key detected!")
                 		break
