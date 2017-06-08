@@ -67,7 +67,7 @@ class kobuki :
 
 		# throttle and steering variables
 		self.thr = 0
-                self.steer = 50
+                self.steer = 0.5
 
 	def get_rgb(self):
 		"""
@@ -174,6 +174,8 @@ class kobuki :
 	'''
 	
 	def drive(self, thr, steer) :
+		radius = 0
+		speed = 0
 		if (thr == 1) :
 			speed = 300
 
@@ -191,11 +193,12 @@ class kobuki :
 		elif (steer == 0) :
 			radius = 300
 
-		elif (steer == 1)
+		elif (steer == 1) :
 			radius = -300
 
 		else :
 			print("Wrong steering values, setting to 0.5")
+			radius = 0
 
 		self.send(self.base_control(speed,radius))
 	
@@ -215,10 +218,12 @@ class kobuki :
 		cv2.imwrite(rgb_str, rgb)
 		cv2.imwrite(depth_str, d4d)
 
+		#cv2.imshow('display', rgb)
+		
 		# Write throttle+steer into CSV
-		steer_left = (steer == 0)
-		steer_right = (steer == 1)
-		steer_straight = (steer == 0.5)
+		steer_left = int((steer == 0))
+		steer_right = int((steer == 1))
+		steer_straight = int((steer == 0.5))
 		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(thr)]+[str(steer_left)]+[str(steer_straight)]+[str(steer_right)])
 		
 	# Main run loop
@@ -270,7 +275,9 @@ class kobuki :
                         		self.thr = 0
 			'''
 
-			while (True) :
+		while (True) :
+                        char = '\0'
+                        char = cv2.waitKey(10) & 255
 			if(char == 27) :
                                 print("\tEscape key detected!")
                                 break
@@ -283,10 +290,11 @@ class kobuki :
         
                         elif char == ord('a') :
 				self.thr = 1
-                       		steer = 0
+                       		self.steer = 0
 
                         elif char == ord('d') :
-                                steer = 1
+				self.thr = 1
+                                self.steer = 1
 				
                         elif char == ord('s') :
                                 self.steer = 0.5
@@ -309,4 +317,4 @@ if __name__ == '__main__' :
 	kob.run()
 
 	# make videos
-	os.system("sh make_video.sh")
+	#os.system("sh make_video.sh")
