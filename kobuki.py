@@ -59,7 +59,8 @@ class kobuki :
 		print("Serial connection to Kobuki initialized")
 		
 		# Set save path here
-		self.save_path = 'data/'
+		self.save_path = "data"+str(time.time()).replace(".","_")+"/"
+		os.system("mkdir "+self.save_path)
 
 		#Initialize CSV file
 		self.csv_file = open(self.save_path+'data.csv', "wb")
@@ -311,8 +312,8 @@ class kobuki :
 		self.stop()
 
 if __name__ == '__main__' :
-	os.system("rm -r data/")
-	os.system("mkdir data/")
+	#os.system("rm -r data/")
+	#os.system("mkdir data/")
 	kob = kobuki('/dev/ttyUSB0')
 	kob.run()
 
