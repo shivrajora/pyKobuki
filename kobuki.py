@@ -144,6 +144,7 @@ class kobuki :
 		self.send(self.base_control(0,0))
 
 	# Map throttle values to values input by Kobuki
+	'''
 	def drive(self, thr, steer) :
 		#map throttle (0-100) to speed value
 		if(thr>100) :
@@ -170,6 +171,35 @@ class kobuki :
 		#drive robot
 		self.send(self.base_control(speed,radius))
 
+	'''
+	
+	def drive(self, thr, steer) :
+		if (thr == 1) :
+			speed = 300
+
+		elif (thr == 0) :
+			speed = 0
+
+		else :
+			print("Wrong throttle value, setting to zero")
+			speed = 0
+
+
+		if (steer == 0.5) :
+			radius = 0
+
+		elif (steer == 0) :
+			radius = 300
+
+		elif (steer == 1)
+			radius = -300
+
+		else :
+			print("Wrong steering values, setting to 0.5")
+
+		self.send(self.base_control(speed,radius))
+	
+
 	# Save images+steering+throttle data
 	def save_data(self, steer, thr) :
 		# Get RGB + Depth images
@@ -185,8 +215,11 @@ class kobuki :
 		cv2.imwrite(rgb_str, rgb)
 		cv2.imwrite(depth_str, d4d)
 
-		# Write steer + throttle into CSV
-		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(steer)]+[str(thr)])
+		# Write throttle+steer into CSV
+		steer_left = (steer == 0)
+		steer_right = (steer == 1)
+		steer_straight = (steer == 0.5)
+		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(thr)]+[str(steer_left)]+[str(steer_straight)]+[str(steer_right)])
 		
 	# Main run loop
 	def run(self) :
@@ -195,13 +228,14 @@ class kobuki :
 		cv2.namedWindow('display', cv2.WINDOW_NORMAL)
 		
 		# step values. Change to increase/decrease acceleration
-		thr_step = 2
-		steer_step = 1
+		#thr_step = 2i
+		#steer_step = 1
 
 		# Start measuring time here
 		start_time = time.time()
 
 		# Main loop
+		'''
 		while(True) :
 			char = '\0'
 			char = cv2.waitKey(10) & 255
@@ -234,7 +268,30 @@ class kobuki :
                 		self.thr = self.thr-thr_step
                 		if(self.thr<0) :
                         		self.thr = 0
+			'''
 
+			while (True) :
+			if(char == 27) :
+                                print("\tEscape key detected!")
+                                break
+
+                        elif char == ord('w'):
+                                self.thr = 1
+                                self.steer = 0.5
+                                #if(self.thr>100) :
+                                #        self.thr = 100
+        
+                        elif char == ord('a') :
+				self.thr = 1
+                       		steer = 0
+
+                        elif char == ord('d') :
+                                steer = 1
+				
+                        elif char == ord('s') :
+                                self.steer = 0.5
+				self.thr = 0
+		
 			self.drive(self.thr,self.steer)
 
 			end_time = time.time()
