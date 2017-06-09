@@ -18,7 +18,10 @@ dist = '/usr/lib/'
 
 class kobuki :
 	# initialize Kobuki. OpenCV and 3D camera
-	def __init__(self, dev_path):
+	def __init__(self, dev_path) :
+		self.dev_path = dev_path
+
+	def initialize(self) :
 		#initialize OpenNI2
 		openni2.initialize(dist) #
 		if (openni2.is_initialized()):
@@ -55,7 +58,7 @@ class kobuki :
 		print("ASUS Xtion Pro Initialized")
 
 		#initialize Serial communication
-		self.serial = Serial(dev_path, 115200)
+		self.serial = Serial(self.dev_path, 115200)
 		print("Serial connection to Kobuki initialized")
 		
 		# Set save path here
@@ -116,16 +119,21 @@ class kobuki :
 		self.serial.write(''.join(map(chr, packets)))
 	
 	# destructor
-	def __del__(self):
+	# def __del__(self) :
+	def deinitialize(self) :
 		self.stop()
 		self.serial.close()
 		print("Serial connection to Kobuki closed")
 
 		## Release resources 
 		self.csv_file.close()
+		print("CSV file closed")
+		
 		cv2.destroyAllWindows()
-		print("OpenCV terminated")		
-
+		print("OpenCV terminated")
+		
+		#rgb = self.get_rgb()
+                #_,d4d = self.get_depth()
 		self.rgb_stream.stop()
 		self.depth_stream.stop()
 		openni2.unload()
@@ -222,10 +230,7 @@ class kobuki :
 		#cv2.imshow('display', rgb)
 		
 		# Write throttle+steer into CSV
-		steer_left = int((steer == 0))
-		steer_right = int((steer == 1))
-		steer_straight = int((steer == 0.5))
-		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(thr)]+[str(steer_left)]+[str(steer_straight)]+[str(steer_right)])
+		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(thr)]+[str(int(steer==0))]+[str(int(steer==0.5))]+[str(int(steer==1))])
 		
 	# Main run loop
 	def run(self) :
@@ -241,41 +246,6 @@ class kobuki :
 		start_time = time.time()
 
 		# Main loop
-		'''
-		while(True) :
-			char = '\0'
-			char = cv2.waitKey(10) & 255
-			if(char == 27) :
-				print("\tEscape key detected!")
-                		break
-
-		        elif char == ord('w'):
-                		self.thr = self.thr+thr_step
-				self.steer = 50
-                		if(self.thr>100) :
-                        		self.thr = 100
-        
-        		elif char == ord('a') :
-                		if(self.steer <= 50) :
-                        		self.steer = 100
-                		self.steer = self.steer - steer_step
-                		if(self.steer<80) :
-                        		self.steer = 80
-
-		        elif char == ord('d') :
-                		if(self.steer>=50) :
-		                        self.steer = 0
-                		self.steer = self.steer+steer_step
-                		if(self.steer>20) :
-                        		self.steer = 20
-
-        		elif char == ord('s') :
-				self.steer = 50
-                		self.thr = self.thr-thr_step
-                		if(self.thr<0) :
-                        		self.thr = 0
-			'''
-
 		while (True) :
                         char = '\0'
                         char = cv2.waitKey(10) & 255
@@ -315,7 +285,9 @@ if __name__ == '__main__' :
 	#os.system("rm -r data/")
 	#os.system("mkdir data/")
 	kob = kobuki('/dev/ttyUSB0')
+	kob.initialize()
 	kob.run()
+	kob.deinitialize()
 
 	# make videos
 	#os.system("sh make_video.sh")
