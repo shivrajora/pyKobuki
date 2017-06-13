@@ -72,6 +72,7 @@ class kobuki :
 		# throttle and steering variables
 		self.thr = 0
                 self.steer = 0.5
+		self.image_count = 1
 
 	def get_rgb(self):
 		"""
@@ -219,7 +220,7 @@ class kobuki :
                 _,d4d = self.get_depth()
 
 		# Prepare strings for save paths
-		time_str = self.save_path+datetime.now().strftime("%Y_%m_%d_%H_%M_%S_")+str(time.time()).replace(".","_")
+		time_str = self.save_path+'{:06d}'.format(self.image_count)
 		rgb_str = time_str+"_rgb.jpg"
 		depth_str = time_str+"_depth.jpg"
 	
@@ -231,6 +232,7 @@ class kobuki :
 		
 		# Write throttle+steer into CSV
 		self.csv_writer.writerow([rgb_str]+[depth_str]+[str(thr)]+[str(int(steer==0))]+[str(int(steer==0.5))]+[str(int(steer==1))])
+		self.image_count = self.image_count + 1
 		
 	# Main run loop
 	def run(self) :
